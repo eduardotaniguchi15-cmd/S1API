@@ -33,10 +33,7 @@ namespace S1API.Products
             var packaging = ItemManager.GetItemDefinition(packagingId);
 
             if (packaging is PackagingDefinition packagingDef)
-            {
-                Debug.Log($"[ProductPopulator] Found packaging: {packagingDef.Name} (ID: {packagingId})");
                 return packagingDef;
-            }
 
             Debug.LogWarning($"[ProductPopulator] Could not find packaging with ID '{packagingId}'");
 
@@ -49,20 +46,14 @@ namespace S1API.Products
         /// <returns>A list of product definitions.</returns>
         public static List<ProductDefinition> GetAllProductDefinitions()
         {
-            Debug.Log("[ProductPopulator] Getting all product definitions from ProductManager.DiscoveredProducts");
-
             var discoveredProducts = ProductManager.DiscoveredProducts;
-            Debug.Log($"[ProductPopulator] Found {discoveredProducts.Length} discovered products in save");
-
             var productDefs = new List<ProductDefinition>();
 
             foreach (var product in discoveredProducts)
             {
                 productDefs.Add(product);
-                Debug.Log($"[ProductPopulator] Found product: {product.Name} (ID: {product.ID})");
             }
-
-            Debug.Log($"[ProductPopulator] Total product definitions found: {productDefs.Count}");
+            
             return productDefs;
         }
 
@@ -123,16 +114,12 @@ namespace S1API.Products
         /// <returns>The number of items successfully added.</returns>
         public static int PopulateWithPackagedProducts(StorageInstance storage, string packagingId, int quantityPerItem = 1)
         {
-            Debug.Log($"[ProductPopulator] PopulateWithPackagedProducts called with packaging: {packagingId}");
-
-            if (storage == null)
+            if (storage.S1Storage == null)
             {
                 Debug.LogWarning("[ProductPopulator] Cannot populate null storage");
                 return 0;
             }
-
-            Debug.Log($"[ProductPopulator] Storage name: '{storage.Name}', SlotCount: {storage.SlotCount}, ItemCount: {storage.ItemCount}");
-
+            
             var packaging = GetPackaging(packagingId);
             if (packaging == null)
             {
@@ -146,18 +133,13 @@ namespace S1API.Products
                 Debug.LogWarning("[ProductPopulator] No product definitions found in discovered products");
                 return 0;
             }
-
-            Debug.Log($"[ProductPopulator] Found {productDefinitions.Count} product definitions, filling {storage.SlotCount} slots");
-
+            
             int addedCount = 0;
             int slotIndex = 0;
 
             while (slotIndex < storage.SlotCount && addedCount < storage.SlotCount)
             {
                 var productDef = productDefinitions[slotIndex % productDefinitions.Count];
-
-                Debug.Log($"[ProductPopulator] Slot {slotIndex + 1}/{storage.SlotCount}: Creating {quantityPerItem}g of '{productDef.Name}' in {packaging.Name}");
-
                 var productInstance = CreatePackagedProduct(productDef, packaging, quantityPerItem);
 
                 if (productInstance == null)
@@ -167,14 +149,10 @@ namespace S1API.Products
                     continue;
                 }
 
-                Debug.Log($"[ProductPopulator] Created packaged product: {productInstance.Definition.Name}, Quality: {productInstance.Quality}, Quantity: {productInstance.Quantity}, Packaged: {productInstance.IsPackaged}");
-
                 if (storage.CanItemFit(productInstance, productInstance.Quantity))
                 {
-                    Debug.Log($"[ProductPopulator] Item fits, adding to storage...");
                     storage.AddItem(productInstance);
                     addedCount++;
-                    Debug.Log($"[ProductPopulator] Successfully added {quantityPerItem}g of '{productDef.Name}' in {packaging.Name} to slot {slotIndex + 1}");
                 }
                 else
                 {
@@ -185,7 +163,6 @@ namespace S1API.Products
                 slotIndex++;
             }
 
-            Debug.Log($"[ProductPopulator] Finished populating storage. Added {addedCount}/{storage.SlotCount} items. Storage now has {storage.ItemCount} items");
             return addedCount;
         }
 
@@ -199,13 +176,13 @@ namespace S1API.Products
         /// <returns>The number of items successfully added.</returns>
         public static int PopulateWithSpecificPackagedProducts(StorageInstance storage, List<string> productIds, string packagingId, int quantityPerProduct = 1)
         {
-            if (storage == null)
+            if (storage.S1Storage == null)
             {
                 Debug.LogWarning("[ProductPopulator] Cannot populate null storage");
                 return 0;
             }
 
-            if (productIds == null || productIds.Count == 0)
+            if (productIds.First() == null || productIds.Count == 0)
             {
                 Debug.LogWarning("[ProductPopulator] No product IDs provided");
                 return 0;
@@ -232,7 +209,6 @@ namespace S1API.Products
                     {
                         storage.AddItem(productInstance);
                         addedCount++;
-                        Debug.Log($"[ProductPopulator] Added {quantityPerProduct}x {productDef.Name} in {packaging.Name} to {storage.Name}");
                     }
                 }
                 else
@@ -270,9 +246,7 @@ namespace S1API.Products
                     S1ItemFramework.EQuality.Standard,
                     s1Packaging
                 );
-
-                Debug.Log($"[ProductPopulator] Created {packaging.Name} containing {quantity}g of {productDef.Name}");
-
+                
                 return new ProductInstance(s1ProductInstance);
             }
             catch (System.Exception ex)
@@ -290,15 +264,11 @@ namespace S1API.Products
         /// <returns>The number of items successfully added.</returns>
         public static int PopulateWithUnpackagedProducts(StorageInstance storage, int quantityPerItem = 1)
         {
-            Debug.Log("[ProductPopulator] PopulateWithUnpackagedProducts called");
-
-            if (storage == null)
+            if (storage.S1Storage == null)
             {
                 Debug.LogWarning("[ProductPopulator] Cannot populate null storage");
                 return 0;
             }
-
-            Debug.Log($"[ProductPopulator] Storage name: '{storage.Name}', SlotCount: {storage.SlotCount}, ItemCount: {storage.ItemCount}");
 
             var productDefinitions = GetAllProductDefinitions();
             if (productDefinitions.Count == 0)
@@ -307,17 +277,12 @@ namespace S1API.Products
                 return 0;
             }
 
-            Debug.Log($"[ProductPopulator] Found {productDefinitions.Count} product definitions, filling {storage.SlotCount} slots");
-
             int addedCount = 0;
             int slotIndex = 0;
 
             while (slotIndex < storage.SlotCount && addedCount < storage.SlotCount)
             {
                 var productDef = productDefinitions[slotIndex % productDefinitions.Count];
-
-                Debug.Log($"[ProductPopulator] Slot {slotIndex + 1}/{storage.SlotCount}: Creating {quantityPerItem}g of unpackaged '{productDef.Name}'");
-
                 var productInstance = productDef.CreateInstance(quantityPerItem) as ProductInstance;
 
                 if (productInstance == null)
@@ -327,14 +292,10 @@ namespace S1API.Products
                     continue;
                 }
 
-                Debug.Log($"[ProductPopulator] Created unpackaged product: {productInstance.Definition.Name}, Quality: {productInstance.Quality}, Quantity: {productInstance.Quantity}, Packaged: {productInstance.IsPackaged}");
-
                 if (storage.CanItemFit(productInstance, productInstance.Quantity))
                 {
-                    Debug.Log($"[ProductPopulator] Item fits, adding to storage...");
                     storage.AddItem(productInstance);
                     addedCount++;
-                    Debug.Log($"[ProductPopulator] Successfully added {quantityPerItem}g of unpackaged '{productDef.Name}' to slot {slotIndex + 1}");
                 }
                 else
                 {
@@ -344,8 +305,7 @@ namespace S1API.Products
 
                 slotIndex++;
             }
-
-            Debug.Log($"[ProductPopulator] Finished populating storage. Added {addedCount}/{storage.SlotCount} items. Storage now has {storage.ItemCount} items");
+            
             return addedCount;
         }
 
@@ -358,13 +318,13 @@ namespace S1API.Products
         /// <returns>The number of items successfully added.</returns>
         public static int PopulateWithSpecificProducts(StorageInstance storage, List<string> productIds, int quantityPerProduct = 1)
         {
-            if (storage == null)
+            if (storage.S1Storage == null)
             {
                 Debug.LogWarning("[ProductPopulator] Cannot populate null storage");
                 return 0;
             }
 
-            if (productIds == null || productIds.Count == 0)
+            if (productIds.First() == null || productIds.Count == 0)
             {
                 Debug.LogWarning("[ProductPopulator] No product IDs provided");
                 return 0;
@@ -384,7 +344,6 @@ namespace S1API.Products
                     {
                         storage.AddItem(productInstance);
                         addedCount++;
-                        Debug.Log($"[ProductPopulator] Added {quantityPerProduct}x {productDef.Name} to {storage.Name}");
                     }
                 }
                 else
@@ -417,8 +376,6 @@ namespace S1API.Products
         /// <returns>The number of items successfully added, or -1 if storage not found.</returns>
         public static int PopulateFromGameObject(GameObject gameObject, string packagingId, int quantityPerItem = 1)
         {
-            Debug.Log($"[ProductPopulator] PopulateFromGameObject called for '{gameObject?.name}' with packaging '{packagingId}'");
-
             if (gameObject == null)
             {
                 Debug.LogWarning("[ProductPopulator] PopulateFromGameObject called with null GameObject");
@@ -427,7 +384,7 @@ namespace S1API.Products
 
             var storage = StorageInstance.FromGameObject(gameObject);
 
-            if (storage == null)
+            if (storage == null || storage.S1Storage == null)
             {
                 Debug.LogWarning($"[ProductPopulator] No StorageEntity found on GameObject '{gameObject?.name}', trying FromGameObjectInChildren...");
                 storage = StorageInstance.FromGameObjectInChildren(gameObject);
@@ -439,7 +396,6 @@ namespace S1API.Products
                 return -1;
             }
 
-            Debug.Log($"[ProductPopulator] Found storage, proceeding to populate...");
             return PopulateWithPackagedProducts(storage, packagingId, quantityPerItem);
         }
     }

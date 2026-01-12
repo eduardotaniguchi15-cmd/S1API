@@ -102,6 +102,7 @@ namespace S1API.Internal.Lifecycle
                         if (string.Equals(sceneName, "Main", StringComparison.OrdinalIgnoreCase))
                         {
                             NPCNetworkBootstrap.OnMainSceneInitialized();
+                            PropertyNetworkBootstrap.OnMainSceneInitialized();
                             // Kick off delayed seating scan once Main initializes to avoid early Awake crashes
                             try { Internal.SeatBootstrap.OnMainSceneInitialized(); } catch { }
                             
@@ -121,6 +122,7 @@ namespace S1API.Internal.Lifecycle
                         else
                         {
                             NPCNetworkBootstrap.ResetFlags();
+                            PropertyNetworkBootstrap.ResetFlags();
                             TimeManagerShim.Instance.DeleteDelegatesFromReal();
                         }
                     }
